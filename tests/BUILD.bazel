@@ -61,3 +61,11 @@ py_test(
         "@pypi//rerun_sdk",
     ],
 )
+
+py_test(
+    name = "torch_test",
+    srcs = ["torch_test.py"],
+    deps = [
+        "@pypi//torch",
+    ],
+)

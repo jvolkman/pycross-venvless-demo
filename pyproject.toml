@@ -35,6 +35,11 @@ dependencies = [
 
     # 6. Root .pth subdirectory relocation (site-packages/rerun_sdk/rerun via rerun_sdk.pth)
     "rerun-sdk==0.33.0",
+
+    # 7. Real-world consumer of all of the above: torch loads its CUDA libraries through
+    #    escaping $ORIGIN RUNPATHs, falling back to globbing sys.path for nvidia/*/lib.
+    #    2.5.1 pins the same nvidia-*-cu12 versions as section 4.
+    "torch==2.5.1",
 ]
 
 [[tool.uv.index]]

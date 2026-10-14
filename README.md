@@ -27,17 +27,17 @@ Or compare against stock `rules_python` modes without the `rules_pycross` import
 
 ```bash
 # Stock rules_python symlinked site-packages (venvs_site_packages=yes, venv_import_index=off)
-# -> 3 of 6 tests FAIL: two cross-wheel regular-package collisions, plus the bare-SONAME
-#    ctypes.CDLL check (which a plain pip venv fails too). Also spawns one symlink action per
+# -> 4 of 7 tests FAIL: two cross-wheel regular-package collisions, the bare-SONAME
+#    ctypes.CDLL check (which a plain pip venv fails too), and torch's RUNPATH check. Also spawns one symlink action per
 #    linked path per binary.
 bazel test --config=off //...
 
 # Startup directory scan instead of the prebuilt native metadata (pure-Python resolution only)
-# -> 2 of 6 tests FAIL (the two native tests)
+# -> 3 of 7 tests FAIL (the three native tests)
 bazel test --config=scan //...
 
 # Plain per-wheel sys.path (venvs_site_packages=no, venv_import_index=off)
-# -> 5 of 6 tests FAIL!
+# -> 6 of 7 tests FAIL!
 bazel test --config=no_venv //...
 ```
 
@@ -49,8 +49,10 @@ bazel test --config=no_venv //...
 | `//tests:nvidia_cuda_test` | 4-wheel `nvidia/__init__.py` + cross-wheel `DT_NEEDED` & bare SONAME `CDLL` | PASS | FAIL | FAIL¹ | FAIL |
 | `//tests:pth_relocation_test` | Root `.pth` subdirectory redirection (`rerun_sdk.pth`) | PASS | PASS | PASS | FAIL |
 | `//tests:mixed_namespaces_test` | Mixed PEP 420, `pkgutil.extend_path`, and `*-nspkg.pth` namespaces | PASS | PASS | PASS | PASS |
+| `//tests:torch_test` | Real torch: CUDA libraries via escaping `$ORIGIN/../../nvidia/*/lib` RUNPATHs, plus torch's `sys.path`-walking fallback | PASS | FAIL² | FAIL² | FAIL² |
 
 ¹ Only the bare-SONAME `ctypes.CDLL("libnvJitLink.so.12")` check fails; a plain pip venv fails it too unless something already loaded the library. Cross-wheel `DT_NEEDED` resolution passes since rules_pycross 2.0.1 ([#364](https://github.com/jvolkman/rules_pycross/pull/364)).
+² torch itself imports and works in every mode, because when `libtorch_global_deps.so` fails to load it globs `nvidia/<lib>/lib` on every `sys.path` entry (`_preload_cuda_deps`) and retries. Only the check that its RUNPATH dependencies resolve without that fallback fails, which matters for packages with the same layout and no fallback (tensorflow, jaxlib plugins, …).
 
 **Is `--config=off` what rules_python's own pip rules would do?** Probably not for the two collision tests (not tested in this repo). When several wheels' venv entries overlap, rules_python merges them file by file (`_merge_venv_path_group` in `venv_runfiles.bzl`), which needs every file as a `File` at analysis time. `pip.parse` extracts wheels at repository time and globs their files, so it provides that list, and `azure_plugin_test` and `functions_framework_test` likely pass there with `venvs_site_packages=yes`. One caveat: files both wheels ship (the two `google/cloud/functions/__init__.py`) are first-wins, so the functions-framework result may depend on dependency order, much as pip's result depends on install order. rules_pycross installs each wheel into a single TreeArtifact whose files aren't visible at analysis time, so overlapping entries are dropped instead. That's a rules_pycross limitation of the symlinked venv, which the import index avoids.
 
@@ -124,3 +126,14 @@ bazel test --config=no_venv //...
   `rerun-sdk` places its actual `rerun` package inside a subdirectory (`site-packages/rerun_sdk/rerun/__init__.py`) and ships a root `rerun_sdk.pth` file containing `rerun_sdk` so `import rerun` resolves.
 - **How `rules_pycross` handles it:**
   The import index processes the root `.pth` files of all wheel roots at startup in global name order via `site.addpackage` (pip semantics), so `rerun_sdk.pth` adds `rerun_sdk/` to `sys.path`. In `--config=off`, `rerun_sdk.pth` is linked into the venv's `site-packages`, where `site` processes it too.
+
+### 7. Real-World Consumer: `torch` + 12 `nvidia-*-cu12` Wheels
+- **Target:** `//tests:torch_test`
+- **What the wheels do:**
+  - `torch` 2.5.1 depends on 12 `nvidia-*-cu12` wheels (pinned to the same versions as test 4). `torch/lib/libtorch_global_deps.so` and friends have `DT_NEEDED` entries such as `libcudart.so.12`, `libcublas.so.12` and `libcudnn.so.9`, found through `DT_RUNPATH` entries like `$ORIGIN/../../nvidia/cublas/lib`.
+  - `import torch` loads `libtorch_global_deps.so` with `RTLD_GLOBAL`. If that fails, `_preload_cuda_deps()` walks `sys.path`, globs `<entry>/nvidia/<lib>/lib/<name>`, preloads what it finds and retries.
+- **What the test checks:** before `import torch`, that `libtorch_global_deps.so` loads directly (its RUNPATH dependencies resolve); after it, that a tensor op works, that `libcublas`, `libcudnn`, `libcusparse` and `libnvJitLink` are mapped from the nvidia wheels, and that torch's own `sys.path` walk (`_preload_cuda_deps`) finds `libcublas` and `libcudnn`. No GPU is needed.
+- **Why standard Bazel setups fail (the RUNPATH check; torch's fallback still rescues the import):**
+  1. Under per-wheel `sys.path` (`--config=no_venv`), `torch/lib/../../nvidia` is inside torch's own wheel directory, where no `nvidia/` exists.
+  2. Under symlinked `site-packages/` (`--config=off`), `torch` is a top-level regular package, so it is linked as one directory symlink, and the kernel resolves `$ORIGIN/../..` inside torch's wheel. rules_pycross keeps top-level packages whole; only shared-library directories below a namespace are split.
+- **How `rules_pycross` handles it:** `torch` is a consumer wheel (escaping `$ORIGIN`), so the import index preloads the nvidia libraries its RUNPATHs point at, by absolute path, before torch loads `libtorch_global_deps.so`. In `--config=scan` there is no native metadata, so only torch's fallback works.
