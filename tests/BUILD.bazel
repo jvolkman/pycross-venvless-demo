@@ -1,12 +1,11 @@
-load("@pypi//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_test")
 
 py_test(
     name = "functions_framework_test",
     srcs = ["functions_framework_test.py"],
     deps = [
-        requirement("functions-framework"),
-        requirement("google-cloud-functions"),
+        "@pypi//functions_framework",
+        "@pypi//google_cloud_functions",
     ],
 )
 
@@ -14,8 +13,8 @@ py_test(
     name = "azure_plugin_test",
     srcs = ["azure_plugin_test.py"],
     deps = [
-        requirement("azure-core"),
-        requirement("azure-core-tracing-opentelemetry"),
+        "@pypi//azure_core",
+        "@pypi//azure_core_tracing_opentelemetry",
     ],
 )
 
@@ -23,9 +22,9 @@ py_test(
     name = "pyqt5_test",
     srcs = ["pyqt5_test.py"],
     deps = [
-        requirement("pyqt5"),
-        requirement("pyqt5-qt5"),
-        requirement("pyqt5-sip"),
+        "@pypi//pyqt5",
+        "@pypi//pyqt5_qt5",
+        "@pypi//pyqt5_sip",
     ],
 )
 
@@ -33,10 +32,10 @@ py_test(
     name = "nvidia_cuda_test",
     srcs = ["nvidia_cuda_test.py"],
     deps = [
-        requirement("nvidia-cuda-runtime-cu12"),
-        requirement("nvidia-cusparse-cu12"),
-        requirement("nvidia-nvjitlink-cu12"),
-        requirement("nvidia-nvtx-cu12"),
+        "@pypi//nvidia_cuda_runtime_cu12",
+        "@pypi//nvidia_cusparse_cu12",
+        "@pypi//nvidia_nvjitlink_cu12",
+        "@pypi//nvidia_nvtx_cu12",
     ],
 )
 
@@ -44,14 +43,14 @@ py_test(
     name = "mixed_namespaces_test",
     srcs = ["mixed_namespaces_test.py"],
     deps = [
-        requirement("backports.entry-points-selectable"),
-        requirement("backports.tarfile"),
-        requirement("google-cloud-pubsub"),
-        requirement("google-cloud-storage"),
-        requirement("opentelemetry-api"),
-        requirement("opentelemetry-sdk"),
-        requirement("zope.event"),
-        requirement("zope.interface"),
+        "@pypi//backports_entry_points_selectable",
+        "@pypi//backports_tarfile",
+        "@pypi//google_cloud_pubsub",
+        "@pypi//google_cloud_storage",
+        "@pypi//opentelemetry_api",
+        "@pypi//opentelemetry_sdk",
+        "@pypi//zope_event",
+        "@pypi//zope_interface",
     ],
 )
 
@@ -59,6 +58,6 @@ py_test(
     name = "pth_relocation_test",
     srcs = ["pth_relocation_test.py"],
     deps = [
-        requirement("rerun-sdk"),
+        "@pypi//rerun_sdk",
     ],
 )
