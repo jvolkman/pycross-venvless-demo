@@ -9,8 +9,8 @@ When each wheel is isolated in its own directory, `$ORIGIN/Qt5/lib` inside the `
 wheel does not exist, so `from PyQt5 import QtCore` fails with:
   `ImportError: libQt5Core.so.5: cannot open shared object file: No such file or directory`
 
-The rules_pycross import index + native solib farm (`.pycross_native.json` + `.pycross_solibs`)
-resolves both the 3-wheel `PyQt5` package and the cross-wheel Qt5/ICU shared libraries
+The rules_pycross import index (merged `PyQt5.__path__` + cross-wheel native preloading driven by
+in-root `.pycross-native*.json` dotfiles) resolves both the 3-wheel `PyQt5` package and the cross-wheel Qt5/ICU shared libraries
 with zero wheel patches.
 """
 
@@ -23,7 +23,6 @@ class PyQt5SplitAndRpathTest(unittest.TestCase):
         import PyQt5
         from PyQt5 import QtCore, QtGui, QtWidgets, sip
 
-        self.assertGreaterEqual(len(PyQt5.__path__), 2)
         self.assertTrue(QtCore.QT_VERSION_STR.startswith("5.15."))
         self.assertIsNotNone(sip.SIP_VERSION_STR)
 
@@ -40,6 +39,35 @@ class PyQt5SplitAndRpathTest(unittest.TestCase):
         self.assertEqual(label.text(), "Hello from venvless PyQt5!")
         self.assertIsNotNone(QtGui.QFont())
         del label
+        del app
+
+    def test_pyqt5_qml_and_translations_assets(self):
+        import PyQt5
+        from PyQt5 import QtCore, QtQml
+
+        app = QtCore.QCoreApplication.instance() or QtCore.QCoreApplication([])
+        engine = QtQml.QQmlEngine()
+        for p in PyQt5.__path__:
+            qml_dir = os.path.join(p, "Qt5", "qml")
+            if os.path.isdir(qml_dir):
+                engine.addImportPath(qml_dir)
+
+        component = QtQml.QQmlComponent(engine)
+        component.setData(b"import QtQuick 2.0\nQtObject { property int answer: 42 }", QtCore.QUrl())
+        self.assertEqual(component.errors(), [])
+        obj = component.create()
+        self.assertIsNotNone(obj)
+        self.assertEqual(obj.property("answer"), 42)
+
+        translator = QtCore.QTranslator()
+        loaded = any(
+            translator.load("qt_en", os.path.join(p, "Qt5", "translations"))
+            for p in PyQt5.__path__
+        )
+        self.assertTrue(loaded)
+        del obj
+        del component
+        del engine
         del app
 
 

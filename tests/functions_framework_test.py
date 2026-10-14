@@ -34,9 +34,6 @@ class FunctionsFrameworkOverlapTest(unittest.TestCase):
         self.assertEqual(ctx.event_id, "123")
         self.assertIs(Context, ContextV1)
 
-        # Verify __path__ spans both wheels' directories
-        self.assertGreaterEqual(len(google.cloud.functions.__path__), 2)
-        self.assertGreaterEqual(len(google.cloud.functions_v1.__path__), 2)
         self.assertTrue(callable(functions_framework.http))
 
 

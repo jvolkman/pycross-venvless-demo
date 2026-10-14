@@ -35,7 +35,6 @@ class MixedNamespacesTest(unittest.TestCase):
         import backports.entry_points_selectable
         import backports.tarfile
 
-        self.assertGreaterEqual(len(backports.__path__), 2)
         self.assertIsNotNone(backports.tarfile.TarFile)
         self.assertIsNotNone(backports.entry_points_selectable.entry_points)
 

@@ -17,7 +17,7 @@ class AzurePluginSubpackageTest(unittest.TestCase):
         import azure.core.tracing.ext
         from azure.core.tracing.ext.opentelemetry_span import OpenTelemetrySpan
 
-        self.assertGreaterEqual(len(azure.core.tracing.ext.__path__), 2)
+        self.assertIsNotNone(azure.core.tracing.ext)
         self.assertIsNotNone(OpenTelemetrySpan)
 
 

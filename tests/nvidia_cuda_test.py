@@ -25,8 +25,10 @@ class NvidiaCudaSplitAndNativeLoadTest(unittest.TestCase):
         import nvidia.nvjitlink.lib
         import nvidia.nvtx.lib
 
-        # All 4 wheels contribute to `nvidia.__path__`
-        self.assertEqual(len(nvidia.__path__), 4)
+        self.assertTrue(os.path.isdir(nvidia.cuda_runtime.lib.__path__[0]))
+        self.assertTrue(os.path.isdir(nvidia.cusparse.lib.__path__[0]))
+        self.assertTrue(os.path.isdir(nvidia.nvjitlink.lib.__path__[0]))
+        self.assertTrue(os.path.isdir(nvidia.nvtx.lib.__path__[0]))
 
     def test_cross_wheel_dt_needed_resolution(self):
         import nvidia.cusparse.lib
@@ -41,7 +43,7 @@ class NvidiaCudaSplitAndNativeLoadTest(unittest.TestCase):
 
     def test_bare_soname_cdll(self):
         # Loading by bare SONAME (as onnxruntime-gpu's preload_dlls() does) resolves
-        # directly through .pycross_solibs primed in ld.so.
+        # through the import index's _ctypes.dlopen hook and SONAME table.
         for soname in (
             "libnvJitLink.so.12",
             "libcusparse.so.12",
