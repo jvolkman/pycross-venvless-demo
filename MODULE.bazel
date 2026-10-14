@@ -1,0 +1,52 @@
+module(
+    name = "pycross_venvless_demo",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_python", version = "2.0.0")
+bazel_dep(name = "rules_pycross", version = "0.0.0")
+
+git_override(
+    module_name = "rules_pycross",
+    commit = "c46ada0deddd40a52e1915bc2b8b2c80c8b8aba8",
+    remote = "https://github.com/jvolkman/rules_pycross.git",
+)
+
+PYTHON_VERSION = "3.13.6"
+
+PYTHON_VERSION_NAME = "python_" + PYTHON_VERSION.replace(".", "_")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    ignore_root_user_error = True,
+    is_default = True,
+    python_version = PYTHON_VERSION,
+)
+use_repo(python, PYTHON_VERSION_NAME, "python_versions")
+
+uv = use_extension("@rules_pycross//pycross/extensions:uv.bzl", "uv")
+uv.workspace(
+    name = "pypi",
+    lock_file = "//:uv.lock",
+)
+uv.repo(
+    dependency_groups = [
+        "default",
+        "transitive",
+    ],
+    workspace = "pypi",
+)
+
+# Notice: NO site_paths overrides (e.g. for functions-framework) and
+# NO post_install_patches (e.g. for PyQt5 / PyQt5-Qt5)!
+use_repo(uv, "pypi")
+
+pycross = use_extension("@rules_pycross//pycross/extensions:pycross.bzl", "pycross")
+pycross.configure_toolchains(
+    glibc_version = "2.39",
+    platforms = [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+    ],
+)

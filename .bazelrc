@@ -1,0 +1,20 @@
+common --incompatible_enable_cc_toolchain_resolution
+common --incompatible_strict_action_env
+common --nolegacy_external_runfiles
+
+# Enable rules_python script bootstrap + lightweight venv shell, with
+# rules_pycross's prebuilt import index instead of per-wheel site-packages symlinks.
+build --@rules_python//python/config_settings:bootstrap_impl=script
+build --@rules_python//python/config_settings:venvs_site_packages=yes
+common --@rules_pycross//pycross/settings:venv_import_index=prebuilt
+
+# Optional comparison modes:
+#   bazel test --config=scan //...     (scan wheel roots at startup; pure-Python only)
+#   bazel test --config=off //...      (stock rules_python site-packages symlinks; 5/6 fail!)
+#   bazel test --config=no_venv //...  (plain per-wheel sys.path without venv symlinks; 4/6 fail!)
+common:scan --@rules_pycross//pycross/settings:venv_import_index=scan
+common:off --@rules_pycross//pycross/settings:venv_import_index=off
+common:no_venv --@rules_pycross//pycross/settings:venv_import_index=off
+build:no_venv --@rules_python//python/config_settings:venvs_site_packages=no
+
+try-import %workspace%/.bazelrc.user

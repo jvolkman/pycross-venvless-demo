@@ -1,0 +1,43 @@
+[project]
+name = "pycross-venvless-demo"
+version = "0.1.0"
+description = "Torture-test suite for rules_pycross venvless / import-index package loading"
+requires-python = "==3.13.*"
+dependencies = [
+    # 1. Overlapping regular packages (both ship non-empty google/cloud/functions/__init__.py)
+    "functions-framework==3.10.2",
+    "google-cloud-functions==1.25.0",
+
+    # 2. Plugin subpackage installed inside another wheel's regular package
+    "azure-core==1.41.0",
+    "azure-core-tracing-opentelemetry==1.0.0b13",
+
+    # 3. Split regular package + cross-wheel $ORIGIN/Qt5/lib native C++ shared libs
+    "PyQt5==5.15.11",
+    "PyQt5-Qt5==5.15.19",
+    "PyQt5-sip==12.20.0",
+
+    # 4. Multiple wheels shipping nvidia/__init__.py + cross-wheel $ORIGIN/../../nvjitlink/lib DT_NEEDED
+    "nvidia-cusparse-cu12==12.3.1.170",
+    "nvidia-nvjitlink-cu12==12.4.127",
+    "nvidia-cuda-runtime-cu12==12.4.127",
+    "nvidia-nvtx-cu12==12.4.127",
+
+    # 5. Mixed PEP 420 / pkgutil.extend_path / pkg_resources / *-nspkg.pth namespaces
+    "google-cloud-storage==3.4.0",
+    "google-cloud-pubsub==2.31.1",
+    "opentelemetry-api==1.45.1",
+    "opentelemetry-sdk==1.45.1",
+    "zope.interface==8.6",
+    "zope.event==6.2",
+    "backports.tarfile==1.2.0",
+    "backports.entry-points-selectable==1.3.0",
+
+    # 6. Root .pth subdirectory relocation (site-packages/rerun_sdk/rerun via rerun_sdk.pth)
+    "rerun-sdk==0.33.0",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+default = true
+

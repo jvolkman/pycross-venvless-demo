@@ -1,0 +1,64 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_test")
+
+py_test(
+    name = "functions_framework_test",
+    srcs = ["functions_framework_test.py"],
+    deps = [
+        requirement("functions-framework"),
+        requirement("google-cloud-functions"),
+    ],
+)
+
+py_test(
+    name = "azure_plugin_test",
+    srcs = ["azure_plugin_test.py"],
+    deps = [
+        requirement("azure-core"),
+        requirement("azure-core-tracing-opentelemetry"),
+    ],
+)
+
+py_test(
+    name = "pyqt5_test",
+    srcs = ["pyqt5_test.py"],
+    deps = [
+        requirement("pyqt5"),
+        requirement("pyqt5-qt5"),
+        requirement("pyqt5-sip"),
+    ],
+)
+
+py_test(
+    name = "nvidia_cuda_test",
+    srcs = ["nvidia_cuda_test.py"],
+    deps = [
+        requirement("nvidia-cuda-runtime-cu12"),
+        requirement("nvidia-cusparse-cu12"),
+        requirement("nvidia-nvjitlink-cu12"),
+        requirement("nvidia-nvtx-cu12"),
+    ],
+)
+
+py_test(
+    name = "mixed_namespaces_test",
+    srcs = ["mixed_namespaces_test.py"],
+    deps = [
+        requirement("backports.entry-points-selectable"),
+        requirement("backports.tarfile"),
+        requirement("google-cloud-pubsub"),
+        requirement("google-cloud-storage"),
+        requirement("opentelemetry-api"),
+        requirement("opentelemetry-sdk"),
+        requirement("zope.event"),
+        requirement("zope.interface"),
+    ],
+)
+
+py_test(
+    name = "pth_relocation_test",
+    srcs = ["pth_relocation_test.py"],
+    deps = [
+        requirement("rerun-sdk"),
+    ],
+)
