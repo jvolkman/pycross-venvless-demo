@@ -9,7 +9,7 @@ bazel_dep(name = "rules_pycross", version = "0.0.0")
 
 git_override(
     module_name = "rules_pycross",
-    commit = "c494617734bde59bdb92b18c8a3aa132f4bc6607",
+    commit = "10d48abf280bf9a8b5ace3fe016bb1ad149ad373",
     remote = "https://github.com/jvolkman/rules_pycross.git",
 )
 
