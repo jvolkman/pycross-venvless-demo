@@ -17,12 +17,6 @@ Run the entire torture-test suite with the prebuilt import index (default):
 bazel test //...
 ```
 
-Verify the prebuilt native metadata against a live disk scan:
-
-```bash
-bazel test --test_env=RULES_PYTHON_IMPORT_INDEX=verify //...
-```
-
 Or compare against stock `rules_python` modes without the `rules_pycross` import index:
 
 ```bash
