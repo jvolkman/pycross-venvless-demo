@@ -40,6 +40,11 @@ dependencies = [
     #    escaping $ORIGIN RUNPATHs, falling back to globbing sys.path for nvidia/*/lib.
     #    2.5.1 pins the same nvidia-*-cu12 versions as section 4.
     "torch==2.5.1",
+
+    # 8. Real-world consumer of bare-name dlopen fallback: onnxruntime-gpu's preload_dlls()
+    #    looks for ../nvidia/*/lib relative to onnxruntime/__init__.py (which misses when
+    #    wheels live in separate directories), then falls back to bare-SONAME ctypes.CDLL.
+    "onnxruntime-gpu==1.24.4",
 ]
 
 [[tool.uv.index]]

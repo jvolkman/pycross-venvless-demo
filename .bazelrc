@@ -9,9 +9,9 @@ build --@rules_python//python/config_settings:venvs_site_packages=yes
 common --@rules_pycross//pycross/settings:venv_import_index=prebuilt
 
 # Optional comparison modes:
-#   bazel test --config=scan //...     (scan wheel roots at startup; pure-Python only, 3/7 fail)
-#   bazel test --config=off //...      (stock rules_python site-packages symlinks; 4/7 fail)
-#   bazel test --config=no_venv //...  (plain per-wheel sys.path without venv symlinks; 6/7 fail)
+#   bazel test --config=scan //...     (scan wheel roots at startup; pure-Python only, 4/8 fail)
+#   bazel test --config=off //...      (stock rules_python site-packages symlinks; 4/8 fail)
+#   bazel test --config=no_venv //...  (plain per-wheel sys.path without venv symlinks; 7/8 fail)
 common:scan --@rules_pycross//pycross/settings:venv_import_index=scan
 common:off --@rules_pycross//pycross/settings:venv_import_index=off
 common:no_venv --@rules_pycross//pycross/settings:venv_import_index=off

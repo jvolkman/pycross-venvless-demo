@@ -69,3 +69,17 @@ py_test(
         "@pypi//torch",
     ],
 )
+
+py_test(
+    name = "onnxruntime_test",
+    srcs = ["onnxruntime_test.py"],
+    deps = [
+        "@pypi//nvidia_cublas_cu12",
+        "@pypi//nvidia_cuda_nvrtc_cu12",
+        "@pypi//nvidia_cuda_runtime_cu12",
+        "@pypi//nvidia_cudnn_cu12",
+        "@pypi//nvidia_cufft_cu12",
+        "@pypi//nvidia_curand_cu12",
+        "@pypi//onnxruntime_gpu",
+    ],
+)

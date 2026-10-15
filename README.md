@@ -27,17 +27,17 @@ Or compare against stock `rules_python` modes without the `rules_pycross` import
 
 ```bash
 # Stock rules_python symlinked site-packages (venvs_site_packages=yes, venv_import_index=off)
-# -> 4 of 7 tests FAIL: two cross-wheel regular-package collisions, the bare-SONAME
+# -> 4 of 8 tests FAIL: two cross-wheel regular-package collisions, the bare-SONAME
 #    ctypes.CDLL check (which a plain pip venv fails too), and torch's RUNPATH check. Also spawns one symlink action per
 #    linked path per binary.
 bazel test --config=off //...
 
 # Startup directory scan instead of the prebuilt native metadata (pure-Python resolution only)
-# -> 3 of 7 tests FAIL (the three native tests)
+# -> 4 of 8 tests FAIL (the four native tests)
 bazel test --config=scan //...
 
 # Plain per-wheel sys.path (venvs_site_packages=no, venv_import_index=off)
-# -> 6 of 7 tests FAIL!
+# -> 7 of 8 tests FAIL!
 bazel test --config=no_venv //...
 ```
 
@@ -50,6 +50,7 @@ bazel test --config=no_venv //...
 | `//tests:pth_relocation_test` | Root `.pth` subdirectory redirection (`rerun_sdk.pth`) | PASS | PASS | PASS | FAIL |
 | `//tests:mixed_namespaces_test` | Mixed PEP 420, `pkgutil.extend_path`, and `*-nspkg.pth` namespaces | PASS | PASS | PASS | PASS |
 | `//tests:torch_test` | Real torch: CUDA libraries via escaping `$ORIGIN/../../nvidia/*/lib` RUNPATHs, plus torch's `sys.path`-walking fallback | PASS | FAIL² | FAIL² | FAIL² |
+| `//tests:onnxruntime_test` | Real `onnxruntime-gpu`: `preload_dlls()` relative `../nvidia/*/lib` miss $\rightarrow$ bare-SONAME `ctypes.CDLL` fallback + `libonnxruntime_providers_cuda.so` | PASS | FAIL | PASS | FAIL |
 
 ¹ Only the bare-SONAME `ctypes.CDLL("libnvJitLink.so.12")` check fails; a plain pip venv fails it too unless something already loaded the library. Cross-wheel `DT_NEEDED` resolution passes since rules_pycross 2.0.1 ([#364](https://github.com/jvolkman/rules_pycross/pull/364)).
 ² torch itself imports and works in every mode, because when `libtorch_global_deps.so` fails to load it globs `nvidia/<lib>/lib` on every `sys.path` entry (`_preload_cuda_deps`) and retries. Only the check that its RUNPATH dependencies resolve without that fallback fails, which matters for packages with the same layout and no fallback (tensorflow, jaxlib plugins, …).
@@ -137,3 +138,14 @@ bazel test --config=no_venv //...
   1. Under per-wheel `sys.path` (`--config=no_venv`), `torch/lib/../../nvidia` is inside torch's own wheel directory, where no `nvidia/` exists.
   2. Under symlinked `site-packages/` (`--config=off`), `torch` is a top-level regular package, so it is linked as one directory symlink, and the kernel resolves `$ORIGIN/../..` inside torch's wheel. rules_pycross keeps top-level packages whole; only shared-library directories below a namespace are split.
 - **How `rules_pycross` handles it:** `torch` is a consumer wheel (escaping `$ORIGIN`), so the import index preloads the nvidia libraries its RUNPATHs point at, by absolute path, before torch loads `libtorch_global_deps.so`. In `--config=scan` there is no native metadata, so only torch's fallback works.
+
+### 8. Real-World Bare-SONAME `ctypes.CDLL` Fallback (`onnxruntime-gpu` + 6 `nvidia-*-cu12` Wheels)
+- **Target:** `//tests:onnxruntime_test`
+- **What the wheels do:**
+  - `onnxruntime-gpu` 1.24.4 ships `onnxruntime/capi/libonnxruntime_providers_cuda.so` with `DT_NEEDED` entries on `libcublasLt.so.12`, `libcublas.so.12`, `libcurand.so.10`, `libcufft.so.11`, `libcudart.so.12`, `libcudnn.so.9`, and `libnvrtc.so.12`, and **empty `DT_RPATH` / `DT_RUNPATH`** (`rpath: [], runpath: []`).
+  - To load those libraries before the CUDA execution provider is opened, `onnxruntime.preload_dlls(cuda=True, cudnn=True)` first looks for `../nvidia/<component>/lib/lib*.so.*` relative to `onnxruntime/__init__.py` (`os.path.join(os.path.dirname(__file__), "..")`). If `os.path.isfile(dll_path)` is `False`, it falls back to bare-name `ctypes.CDLL("libcublasLt.so.12")`, `ctypes.CDLL("libcublas.so.12")`, `ctypes.CDLL("libnvrtc.so.12")`, `ctypes.CDLL("libcurand.so.10")`, `ctypes.CDLL("libcufft.so.11")`, `ctypes.CDLL("libcudart.so.12")`, and `ctypes.CDLL("libcudnn.so.9")`.
+- **What the test checks:** calls `onnxruntime.preload_dlls(cuda=True, cudnn=True)`, asserts no `"Failed to load"` messages are printed, verifies all 7 libraries are mapped in `/proc/self/maps` from the `/nvidia/` wheels, and then opens `capi/libonnxruntime_providers_shared.so` and `capi/libonnxruntime_providers_cuda.so` via `ctypes.CDLL` to prove `libonnxruntime_providers_cuda.so`'s `DT_NEEDED` entries resolve. No GPU is needed.
+- **Why standard Bazel setups fail:**
+  1. Under `--config=scan` and `--config=no_venv`, each wheel lives in its own `site-packages/` directory, so `os.path.join(os.path.dirname(onnxruntime.__file__), "..", "nvidia", ...)` looks inside `onnxruntime-gpu`'s wheel root (where no `nvidia/` exists), and the bare-name `ctypes.CDLL("libcublasLt.so.12")` fallback fails because the dynamic linker's default search paths do not include wheel directories.
+  2. Under `--config=off` (symlinked `site-packages/`), `onnxruntime/__init__.py`'s `__file__` is inside the merged `.venv` symlink tree, so `../nvidia/...` resolves to the symlinked `nvidia/` directories in `.venv` and `os.path.isfile(dll_path)` succeeds (matching a flat `pip` venv).
+- **How `rules_pycross` handles it:** When `preload_dlls()` falls back to bare-name `ctypes.CDLL("libcublasLt.so.12")` after `os.path.isfile` misses inside `onnxruntime-gpu`'s wheel root, the import index's `_ctypes.dlopen` hook catches the failed bare-SONAME lookup, lazily loads the per-wheel `.pycross-native.json` dotfiles, and resolves each SONAME to its provider wheel in the binary's closure. Once `preload_dlls()` finishes, all 7 SONAMEs are registered in the dynamic linker's `link_map`, so `libonnxruntime_providers_cuda.so`'s `DT_NEEDED` entries resolve cleanly.

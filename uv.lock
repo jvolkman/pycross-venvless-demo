@@ -267,6 +267,14 @@ wheels = [
 ]
 
 [[package]]
+name = "flatbuffers"
+version = "25.12.19"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e8/2d/d2a548598be01649e2d46231d151a6c56d10b964d94043a335ae56ea2d92/flatbuffers-25.12.19-py2.py3-none-any.whl", hash = "sha256:7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4", size = 26661, upload-time = "2025-12-19T23:16:13.622Z" },
+]
+
+[[package]]
 name = "fsspec"
 version = "2026.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -721,6 +729,23 @@ wheels = [
 ]
 
 [[package]]
+name = "onnxruntime-gpu"
+version = "1.24.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flatbuffers" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "protobuf" },
+    { name = "sympy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/be/4e/56d11203d7a35e7d6a5ea735f5fecb8673537038c07323e8d3090a896547/onnxruntime_gpu-1.24.4-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bbdaa73f9055fb2a177425edbed651a1843a6239f9d5430e284f4e5f65440a33", size = 252763446, upload-time = "2026-03-17T22:04:09.515Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/bc/35f3a37226d7a28c84b8b456f52237ccd39eb7111114bcf9ac340178e1ec/onnxruntime_gpu-1.24.4-cp313-cp313-win_amd64.whl", hash = "sha256:6be8bf2048777c517fca33eb61e114969fa326619feaa789d8c75f24337ea762", size = 207198775, upload-time = "2026-03-17T21:58:48.768Z" },
+    { url = "https://files.pythonhosted.org/packages/37/83/0c851882051b38f245f44b4a51d6232b95b8cd5d334b2c1260f2d796834f/onnxruntime_gpu-1.24.4-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e4b348a078ced73fc577d21b83992fd2187edd10c233729c8d01b000b8543525", size = 252774594, upload-time = "2026-03-17T22:04:24.957Z" },
+]
+
+[[package]]
 name = "opentelemetry-api"
 version = "1.45.1"
 source = { registry = "https://pypi.org/simple" }
@@ -899,6 +924,7 @@ dependencies = [
     { name = "nvidia-cusparse-cu12" },
     { name = "nvidia-nvjitlink-cu12" },
     { name = "nvidia-nvtx-cu12" },
+    { name = "onnxruntime-gpu" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-sdk" },
     { name = "pyqt5" },
@@ -924,6 +950,7 @@ requires-dist = [
     { name = "nvidia-cusparse-cu12", specifier = "==12.3.1.170" },
     { name = "nvidia-nvjitlink-cu12", specifier = "==12.4.127" },
     { name = "nvidia-nvtx-cu12", specifier = "==12.4.127" },
+    { name = "onnxruntime-gpu", specifier = "==1.24.4" },
     { name = "opentelemetry-api", specifier = "==1.45.1" },
     { name = "opentelemetry-sdk", specifier = "==1.45.1" },
     { name = "pyqt5", specifier = "==5.15.11" },
